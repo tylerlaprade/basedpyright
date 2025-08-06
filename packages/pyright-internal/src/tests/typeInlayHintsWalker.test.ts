@@ -1,6 +1,6 @@
+import { tExpect } from 'typed-jest-expect';
 import { ImportTrackerResults } from '../analyzer/typePrinter';
 import { inlayHintSampleFile } from './testUtils';
-import { tExpect } from 'typed-jest-expect';
 
 const noImports: ImportTrackerResults = { imports: new Set(), importFroms: new Map() };
 
@@ -124,6 +124,19 @@ if (process.platform !== 'win32' || !process.env['CI']) {
             { inlayHintType: 'parameter', position: 460, value: 'a=' },
             { inlayHintType: 'parameter', position: 488, value: 'b=' },
             { inlayHintType: 'parameter', position: 711, value: 'b=' },
+        ]);
+    });
+
+    test('method calls', () => {
+        const result = inlayHintSampleFile('method_calls.py', undefined);
+        tExpect(result).toStrictEqual([{ inlayHintType: 'parameter', position: 109, value: 'foo=' }]);
+    });
+
+    test('method calls param matching', () => {
+        const result = inlayHintSampleFile('method_calls.py', undefined, { callArgumentNamesMatching: true });
+        tExpect(result).toStrictEqual([
+            { inlayHintType: 'parameter', position: 109, value: 'foo=' },
+            { inlayHintType: 'parameter', position: 131, value: 'foo=' }, // this one is unique to callArgumentNamesMatching: true
         ]);
     });
 

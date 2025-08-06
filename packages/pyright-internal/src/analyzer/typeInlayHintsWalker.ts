@@ -14,6 +14,9 @@ import {
     isTypeVar,
 } from '../analyzer/types';
 import { ProgramView } from '../common/extensibility';
+import { convertRangeToTextRange } from '../common/positionUtils';
+import { TextRange } from '../common/textRange';
+import { Uri } from '../common/uri/uri';
 import { limitOverloadBasedOnCall } from '../languageService/tooltipUtils';
 import {
     AssignmentNode,
@@ -26,14 +29,11 @@ import {
     ParseNodeType,
     TypeAnnotationNode,
 } from '../parser/parseNodes';
-import { isLiteralType } from './typeUtils';
-import { TextRange } from '../common/textRange';
-import { convertRangeToTextRange } from '../common/positionUtils';
-import { transformTypeForEnumMember } from './enums';
-import { InlayHintSettings } from '../workspaceFactory';
-import { ImportTracker, ImportTrackerResults } from './typePrinter';
-import { Uri } from '../common/uri/uri';
 import { ParseFileResults } from '../parser/parser';
+import { InlayHintSettings } from '../workspaceFactory';
+import { transformTypeForEnumMember } from './enums';
+import { ImportTracker, ImportTrackerResults } from './typePrinter';
+import { isLiteralType } from './typeUtils';
 
 export type TypeInlayHintsItemType = {
     inlayHintType: 'variable' | 'functionReturn' | 'parameter' | 'generic';
@@ -351,8 +351,11 @@ export class TypeInlayHintsWalker extends ParseTreeWalker {
                 continue;
             }
             if (
-                argNode.nodeType === ParseNodeType.Name &&
-                p.paramName === argNode.d.value &&
+                ((argNode.nodeType === ParseNodeType.Name && p.paramName === argNode.d.value) ||
+                    (argNode.nodeType === ParseNodeType.MemberAccess &&
+                        argNode.d.leftExpr.nodeType === ParseNodeType.Name &&
+                        argNode.d.member.d.value in ['class', 'self'] &&
+                        p.paramName === argNode.d.member.d.value)) &&
                 !this._settings.callArgumentNamesMatching
             ) {
                 continue;
